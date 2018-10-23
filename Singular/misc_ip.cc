@@ -24,6 +24,7 @@
 #include "coeffs/flintcf_Q.h"
 #include "coeffs/flintcf_Qrat.h"
 #include "coeffs/flintcf_Zn.h"
+#include "coeffs/transFac.h"
 #include "coeffs/rmodulon.h"
 #include "polys/ext_fields/algext.h"
 #include "polys/ext_fields/transext.h"
@@ -1288,6 +1289,141 @@ extern "C" int flint_mod_init(SModulFunctions* psModulFunctions)
 }
 #endif
 
+static n_coeffType n_transFac = n_unknown;
+static BOOLEAN ii_transFac_init(leftv res, leftv args)
+{
+  if (args == NULL || args->Typ() != INT_CMD)
+  {
+    Werror("int expected. Usage: transFac(char, \"par1\", ..., \"parN\")");
+    return TRUE;
+  }
+
+  int chr = (int)(long) args->Data();
+  int nVar = 0;
+  leftv tmp = args->next;
+  while (tmp != NULL)
+  {
+    if (tmp->Typ() != STRING_CMD)
+    {
+      Werror("String expeceted. Usage: transFac(char, \"par1\", ..., \"parN\")");
+      return TRUE;
+    }
+    nVar++;
+    tmp = tmp->next;
+  }
+
+  if (nVar == 0)
+  {
+    Werror("no parameters specified");
+    return TRUE;
+  }
+
+  coeffs cf;
+  if (chr != 0)
+  {
+    // nInitChar handles invalid chr values, so don't check here
+    cf = nInitChar(n_Zp, (void*)(long) chr);
+  }
+  else
+  {
+    cf = nInitChar(n_Q, NULL);
+  }
+
+  char** names = (char**) omAlloc0(nVar * sizeof(char_ptr));
+  int i = 0;
+
+  for (tmp = args->next; tmp != NULL; tmp = tmp->next)
+  {
+    names[i++] = (char*) tmp->CopyD(STRING_CMD);
+  }
+
+  ring extRing = rDefault(cf, nVar, names);
+
+  // need to free names again
+  for (i = nVar-1; i>=0; i--)
+  {
+    omFree(names[i]);
+  }
+  omFree(names);
+
+
+  // should never happen
+  if (!extRing->cf->is_domain)
+  {
+    Werror("Error: non-domain coefficient ring will yield faulty arithmetic");
+    return TRUE;
+  }
+
+  res->rtyp = CRING_CMD;
+  res->data = (void*) nInitChar(n_transFac, (void*) extRing);
+
+  return FALSE;
+}
+
+static coeffs nfInitCfByName(char *s, n_coeffType n)
+{
+  const int start_len = strlen("transFac(");
+  if (strncmp(s, "transFac(",start_len) == 0)
+  {
+    s += start_len;
+    int chr;
+    s = nEati(s, &chr, 0);
+    // count commas, i.e. ring parameters
+    int nPars = 0;
+    char *tmp = s;
+    while (*tmp != '\0')
+    {
+      if (*(tmp++) == ',')
+      {
+        nPars++;
+      }
+    }
+    if (nPars == 0)
+    {
+      Werror("transFac: invalid coeff name.");
+      return NULL;
+    }
+    s += 2; // skip ,"
+    int pLen;
+    // variable names
+    char** names = (char**) omAlloc0(nPars * sizeof(char_ptr));
+    for (int i = 0; i < nPars; i++)
+    {
+      tmp = s;
+      pLen = 0;
+      while (*(tmp++) != '"') pLen++;
+      names[i] = (char*) omAlloc0((pLen+1) * sizeof(char));
+      sprintf(names[i], "%.*s", pLen, s);
+
+      // skip name and the three characters ","
+      s += pLen + 3;
+    }
+
+    // now construct ring
+    coeffs cf;
+    if (chr == 0)
+    {
+      cf = nInitChar(n_Q, NULL);
+    }
+    else
+    {
+      cf = nInitChar(n_Zp, (void*)(long) chr);
+    }
+
+    ring extRing = rDefault(cf, nPars, names);
+
+    // delete names
+    for (int i = nPars-1; i >= 0; i--)
+    {
+      omFree(names[i]);
+    }
+    omFree(names);
+
+    return nInitChar(n_transFac, (void*) extRing);
+  }
+  return NULL;
+}
+
 static BOOLEAN iiFloat(leftv res, leftv pnn)
 {
   short float_len=3;
@@ -1453,6 +1589,30 @@ void siInit(char *name)
     //IDDATA(h)=(char*)nInitChar(n_R,NULL);
     //h=enterid("CC",0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
     //IDDATA(h)=(char*)nInitChar(n_long_C,NULL);
+    #ifdef HAVE_FLINT
+    n_FlintQ=nRegister(n_unknown,flintQ_InitChar);
+    if (n_FlintQ!=n_unknown)
+    {
+      iiAddCproc("kernel","flintQp",FALSE,ii_FlintQ_init);
+      nRegisterCfByName(flintQInitCfByName,n_FlintQ);
+    }
+#if __FLINT_RELEASE >= 20503
+    iiAddCproc("kernel","flintQ",FALSE,ii_FlintQrat_init);
+    nRegisterCfByName(flintQInitCfByName,n_FlintQ);
+#endif
+    n_FlintZn=nRegister(n_unknown,flintZn_InitChar);
+    if (n_FlintZn!=n_unknown)
+    {
+      iiAddCproc("kernel","flintZn",FALSE,ii_FlintZn_init);
+      nRegisterCfByName(flintZnInitCfByName,n_FlintZn);
+    }
+    #endif
+    n_transFac = nRegister(n_unknown, n_transFacInitChar);
+    if (n_transFac != n_unknown)
+    {
+      iiAddCproc("kernel", "transFac", FALSE, ii_transFac_init);
+      nRegisterCfByName(nfInitCfByName, n_transFac);
+    }
   }
 // setting routines for PLURAL QRINGS:
 // allowing to use libpolys without libSingular(kStd)

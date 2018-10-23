@@ -117,7 +117,8 @@ enum n_coeffRep
   n_rep_float,    /**< (float), see shortfl.h */
   n_rep_gmp_float,  /**< (gmp_float), see  */
   n_rep_gmp_complex,/**< (gmp_complex), see gnumpc.h */
-  n_rep_gf        /**< (int), see ffields.h */
+  n_rep_gf,       /**< (int), see ffields.h */
+  n_rep_transFac /**< (pTransFac), see transFac.h */
 };
 
 struct n_Procs_s

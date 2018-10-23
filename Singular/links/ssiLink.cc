@@ -62,9 +62,7 @@ VAR link_list ssiToBeClosed=NULL;
 VAR volatile BOOLEAN ssiToBeClosed_inactive=TRUE;
 
 // forward declarations:
-void ssiWritePoly_R(const ssiInfo *d, int typ, poly p, const ring r);
 void ssiWriteIdeal_R(const ssiInfo *d, int typ,const ideal I, const ring r);
-poly ssiReadPoly_R(const ssiInfo *D, const ring r);
 ideal ssiReadIdeal_R(const ssiInfo *d,const ring r);
 
 // the helper functions:
