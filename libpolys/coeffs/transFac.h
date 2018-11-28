@@ -41,11 +41,14 @@ class transFac
 
     void negateInplace();
 
-    void normalize(bool);
+    void normalize (bool);
 };
 
 typedef transFac* pTransFac;
 
-BOOLEAN n_transFacInitChar(coeffs, void*);
+// needed at some points, as n_Init does not overload
+number nfInit(poly, const coeffs);
+int nftIsParam (number, const coeffs);
+BOOLEAN n_transFacInitChar (coeffs, void*);
 
 #endif

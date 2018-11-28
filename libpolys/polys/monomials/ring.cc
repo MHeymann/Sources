@@ -35,6 +35,7 @@
 
 #include "ext_fields/algext.h"
 #include "ext_fields/transext.h"
+#include "coeffs/transFac.h"
 
 
 #define BITS_PER_LONG 8*SIZEOF_LONG
@@ -5779,6 +5780,10 @@ int n_IsParam(const number m, const ring r)
 
   if( _filed_type == n_transExt )
     return ntIsParam(m, C);
+
+  // cannot use n_transFac
+  if (C->rep == n_rep_transFac)
+    return nftIsParam (m, C);
 
   Werror("n_IsParam: IsParam is not to be used for (coeff_type = %d)",getCoeffType(C));
 

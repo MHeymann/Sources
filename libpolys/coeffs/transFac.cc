@@ -7,6 +7,7 @@
 
 #define TRANSEXT_PRIVATES
 #include "polys/ext_fields/transext.h"
+#include "coeffs/longrat.h"
 
 #include "Singular/links/ssiLink.h"
 
@@ -174,6 +175,8 @@ void transFac::normalize (bool force = false)
     }
   }
 
+  // FIXME: canonicalform.lc() is in general not the lc w.r.t. ring
+  // order of parameters (thus obtain different term when printing)
   if (denominator.lc() < 0)
   {
     numerator   *= -1;
@@ -228,7 +231,6 @@ static BOOLEAN nfIsMOne (number f, const coeffs cf)
   pTransFac ff = (pTransFac) f;
   ff->normalize (true);
 
-  // denominator will not consist of only constants after normalization
   if (ff->numeratorIsZero() || !ff->denominatorIsOne())
   {
     return FALSE;
@@ -693,9 +695,30 @@ static int nfSize (number f, const coeffs cf)
   }
 }
 
-// TODO probably very inefficient
 #if 1
+static number nfMap00 (number a, const coeffs src, const coeffs dst)
+{
+  n_Test(a, src);
+
+  if (n_IsZero (a, src))
+  {
+    return nfInit ((poly) NULL, dst);
+  }
+  assume (src->rep == dst->extRing->cf->rep);
+
+  On (SW_RATIONAL);
+  CanonicalForm N = n_convSingNFactoryN (a, TRUE, src);
+  Off (SW_RATIONAL);
+
+  // normalization will take care of nested fractions later on
+  number res = (number) new transFac (N, dst->extRing);
+
+  n_Test(res, dst);
+  return res;
+}
+
 // copy between same coeffs
+// TODO probably very inefficient
 static number nfCopyMap (number f, const coeffs cf, const coeffs dst)
 {
   n_Test (f, cf);
@@ -932,6 +955,11 @@ nMapFunc nfSetMap (const coeffs src, const coeffs dst)
   if (src == dst)
   {
     return ndCopyMap;
+  }
+
+  if ((src->rep==n_rep_gap_rat) && nCoeff_is_Q(dst->extRing->cf))
+  {
+    return nfMap00;
   }
 
   // case where we also map from facDem coeffs
@@ -1183,7 +1211,7 @@ static void nfCoeffWrite(const coeffs cf, BOOLEAN details)
     }
   }
 
-  PrintS(") w/ unexpanded denominators");
+  PrintS(") in factory representation");
 }
 
 static void nfWriteFd(number f, const ssiInfo* d, const coeffs cf)
@@ -1248,6 +1276,20 @@ static number nfNormalizeHelper(number f, number g, const coeffs cf)
 
   pTransFac res=new transFac(p/GCD,cf->extRing);
   return (number)res;
+}
+
+// auxillary stuff
+int nftIsParam (number f, const coeffs cf)
+{
+  pTransFac ff = (pTransFac) f;
+  if (!ff->denominatorIsOne())
+  {
+    return 0;
+  }
+  poly fn = ff->getNumPoly();
+  int v = p_Var (fn, cf->extRing);
+  p_Delete (&fn, cf->extRing);
+  return v;
 }
 
 // initialization function, assume we are given the polynomial ring in which base

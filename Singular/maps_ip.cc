@@ -16,6 +16,7 @@
 #include "polys/matpol.h"
 #include "polys/prCopy.h"
 #include "polys/ext_fields/transext.h"
+#include "coeffs/transFac.h"
 
 //#include "polys/ext_fields/longtrans.h"
 // #include "kernel/longalg.h"
@@ -314,6 +315,61 @@ poly pSubstPar(poly p, int par, poly image)
         v->data=NULL;
       }
       n_Delete(&num, currRing->cf);
+      //TODO check for memory leaks
+      poly pp = pHead(p);
+      //PrintS("map:");pWrite(pp);
+      if( d != NULL )
+      {
+        pSetCoeff(pp, n_Invers(d, currRing->cf));
+        n_Delete(&d, currRing->cf); // d = NULL;
+      }
+      else
+        pSetCoeff(pp, nInit(1));
+
+      //PrintS("->");pWrite((poly)(v->data));
+      poly ppp = pMult((poly)(v->data),pp);
+      //PrintS("->");pWrite(ppp);
+      res=pAdd(res,ppp);
+      pIter(p);
+    }
+  }
+  else if (currRing->cf->rep == n_rep_transFac)
+  {
+    while (p!=NULL)
+    {
+      memset(v,0,sizeof(sleftv));
+
+      number d = n_GetDenom(pGetCoeff(p), currRing->cf);
+      poly den = ((pTransFac) d)->getNumPoly();
+      p_Test(den, R);
+
+      if ( n_IsOne (d, currRing->cf) )
+      {
+        n_Delete(&d, currRing->cf); d = NULL;
+      }
+      else if (!p_IsConstant(den, R))
+      {
+        WarnS("ignoring denominators of coefficients...");
+        n_Delete(&d, currRing->cf); d = NULL;
+      }
+      p_Delete (&den, R);
+
+      number num = n_GetNumerator(pGetCoeff(p), currRing->cf);
+      poly pnum = ((pTransFac) num)->getNumPoly();
+      memset(&tmpW,0,sizeof(sleftv));
+      tmpW.rtyp = POLY_CMD;
+      p_Test(pnum, R);
+
+      tmpW.data = pnum; // a copy of this poly will be used
+
+      p_Normalize(pnum ,R);
+      if (maApplyFetch(MAP_CMD,theMap,v,&tmpW,R,NULL,NULL,0,nMap))
+      {
+        WerrorS("map failed");
+        v->data=NULL;
+      }
+      n_Delete(&num, currRing->cf);
+      p_Delete (&pnum, R);
       //TODO check for memory leaks
       poly pp = pHead(p);
       //PrintS("map:");pWrite(pp);
