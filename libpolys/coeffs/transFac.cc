@@ -1278,6 +1278,26 @@ static number nfNormalizeHelper(number f, number g, const coeffs cf)
   return (number)res;
 }
 
+static BOOLEAN nfCoeffIsEqual(const coeffs cf, n_coeffType n, void *param)
+{
+  if (getCoeffType(cf) != n)
+  {
+    return FALSE;
+  }
+  ring r = (ring) param;
+  if (cf->extRing == r)
+    return TRUE;
+
+  // NOTE: Q(a)[x] && Q(a)[y] should better share the _same_ Q(a)...
+  if( rEqual(cf->extRing, r, TRUE) )
+  {
+    rDelete(r);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 // auxillary stuff
 int nftIsParam (number f, const coeffs cf)
 {
@@ -1296,7 +1316,7 @@ int nftIsParam (number f, const coeffs cf)
 // polys shall lie
 BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
 {
-  assume( parInfo != NULL);
+  assume(parInfo != NULL);
   ring extRing = (ring) parInfo;
 
   assume( extRing         != NULL );
@@ -1316,8 +1336,6 @@ BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
   cf->is_field  = TRUE;
   cf->is_domain = TRUE;
   cf->rep       = n_rep_transFac;
-
-  assume (cf->rep == n_rep_transFac);
 
   cf->cfCopy         = nfCopy;
   cf->cfDelete       = nfDelete;
@@ -1374,13 +1392,14 @@ BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
 
   cf->cfSubringGcd        = nfGcd;
   cf->cfNormalizeHelper   = nfNormalizeHelper;
+
+  cf->nCoeffIsEqual  = nfCoeffIsEqual;
   // copied from transext.cc: write functions step by step
   /*
   cf->cfChineseRemainder = ntChineseRemainder;
 #ifdef LDEBUG
   cf->cfDBTest       = ntDBTest;
 #endif
-  cf->nCoeffIsEqual  = ntCoeffIsEqual;
 
 
   cf->cfParDeg = ntParDeg;
