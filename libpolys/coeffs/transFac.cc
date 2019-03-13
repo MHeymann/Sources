@@ -467,12 +467,21 @@ static number nfAdd (number f, number g, const coeffs cf)
   const CanonicalForm& gden = gg->getDenom();
 
   CanonicalForm denGCD = gcd (fden, gden);
+  CanonicalForm newNum, newDen;
 
-  CanonicalForm lcmf = fden / denGCD,
-                lcmg = gden / denGCD;
+  if (denGCD.isOne())
+  {
+    newNum = (A*gden) + (B*fden);
+    newDen = fden * gden;
+  }
+  else
+  {
+    CanonicalForm lcmf = fden / denGCD,
+                  lcmg = gden / denGCD;
 
-  CanonicalForm newNum = A * lcmg + B * lcmf,
-                newDen = fden * lcmg; // == gden * lcmf
+    newNum = A * lcmg + B * lcmf;
+    newDen = fden * lcmg; // == gden * lcmf
+  }
 
   int newCompl = ff->getComp() + gg->getComp() + 1;
   pTransFac sum = new transFac (newNum, newDen, newCompl, cf->extRing);
@@ -512,12 +521,21 @@ static number nfSub (number f, number g, const coeffs cf)
   const CanonicalForm& gden = gg->getDenom();
 
   CanonicalForm denGCD = gcd (fden, gden);
+  CanonicalForm newNum, newDen;
 
-  CanonicalForm lcmf = fden / denGCD,
-                lcmg = gden / denGCD;
+  if (denGCD.isOne())
+  {
+    newNum = (A*gden) - (B*fden);
+    newDen = fden * gden;
+  }
+  else
+  {
+    CanonicalForm lcmf = fden / denGCD,
+                  lcmg = gden / denGCD;
 
-  CanonicalForm newNum = A * lcmg - B * lcmf,
-                newDen = fden * lcmg; // == gden * lcmf
+    newNum = (A*lcmg) - (B*lcmf);
+    newDen = fden * lcmg; // == gden * lcmf
+  }
 
   int newCompl = ff->getComp() + gg->getComp() + 1;
   pTransFac diff = new transFac (newNum, newDen, newCompl, cf->extRing);
