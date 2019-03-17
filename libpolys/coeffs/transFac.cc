@@ -735,6 +735,20 @@ static number nfMap00 (number a, const coeffs src, const coeffs dst)
   return res;
 }
 
+static number nfMapPP(number a, const coeffs src, const coeffs dst)
+{
+  n_Test(a, src) ;
+  if (n_IsZero(a, src))
+  {
+    return nfInit ((poly) NULL, dst);
+  }
+  assume(src == dst->extRing->cf);
+
+  number res = (number) new transFac (n_convSingNFactoryN (a, TRUE, src), dst->extRing);
+  n_Test(res, dst);
+  return res;
+}
+
 // copy between same coeffs
 // TODO probably very inefficient
 static number nfCopyMap (number f, const coeffs cf, const coeffs dst)
@@ -781,89 +795,18 @@ number nfSubMap (number f, const coeffs src, const coeffs dst)
   n_Test (f, src);
   pTransFac ff = (pTransFac) f;
 
-  const ring rSrc = src->extRing;
+  int save = getCharacteristic();
+  //const ring rSrc = src->extRing;
   const ring rDst = dst->extRing;
 
-  const nMapFunc nMap = n_SetMap (rSrc->cf, rDst->cf);
-  poly num  = ff->getNumPoly();
-  poly g = prMapR (num, nMap, rSrc, rDst);
-  p_Delete(&num, rSrc);
+  setCharacteristic (dst->ch);
+  pTransFac result = new transFac (
+      ff->getNum().mapinto(),
+      ff->getDenom().mapinto(),
+      ff->getComp(),
+      rDst); // does this work?
 
-  /* g may contain summands with coeff 0 */
-  poly hh = g;
-  poly prev = NULL;
-  while(hh != NULL)
-  {
-    if (n_IsZero(pGetCoeff(hh), rDst->cf))
-    {
-      if (prev == NULL)
-      {
-        g = p_LmFreeAndNext(g, rDst);
-        hh = g;
-      }
-      else
-      {
-        prev->next = p_LmFreeAndNext(prev->next, rDst);
-        hh = prev->next;
-      }
-    }
-    else
-    {
-      prev = hh;
-      pIter(hh);
-    }
-  }
-
-  if (g == NULL)
-  {
-    return nfInit ((poly) NULL, dst);
-  }
-
-  poly denNew = NULL;
-
-  if (!ff->denominatorIsOne())
-  {
-    poly d = ff->getDenomPoly();
-
-    poly h = prMapR(d, nMap, rSrc, rDst);
-    p_Delete(&d, rSrc);
-
-    /* h may contain summands with coeff 0 */
-    hh = h;
-    prev = NULL;
-    while(hh != NULL)
-    {
-      if (n_IsZero(pGetCoeff(hh), rDst->cf))
-      {
-        if (prev == NULL)
-        {
-          h = p_LmFreeAndNext(h, rDst);
-          hh = h;
-        }
-        else
-        {
-          prev->next = p_LmFreeAndNext(prev->next, rDst);
-          hh = prev->next;
-        }
-      }
-      else
-      {
-        prev = hh;
-        pIter(hh);
-      }
-    }
-    if (h == NULL)
-    {
-      WerrorS("mapping to */0");
-    }
-
-    denNew = h;
-  }
-  {
-    denNew = p_ISet (1, rDst);
-  }
-
-  pTransFac result = new transFac (g, denNew, ff->getComp(), rDst);
+  setCharacteristic (save);
   n_Test ((number) result, dst);
   return (number) result;
 }
@@ -973,9 +916,20 @@ nMapFunc nfSetMap (const coeffs src, const coeffs dst)
     return ndCopyMap;
   }
 
-  if ((src->rep==n_rep_gap_rat) && nCoeff_is_Q(dst->extRing->cf))
+  if (src->extRing == NULL)
   {
-    return nfMap00;
+    if ((src->rep==n_rep_gap_rat) && nCoeff_is_Q(dst->extRing->cf))
+    {
+      return nfMap00;
+    }
+    if (nCoeff_is_Zp(src) && nCoeff_is_Zp(dst->extRing->cf))
+    {
+      if (src->ch == dst->ch)
+      {
+        return nfMapPP;
+      }
+      return NULL;
+    }
   }
 
   // case where we also map from facDem coeffs
@@ -983,7 +937,7 @@ nMapFunc nfSetMap (const coeffs src, const coeffs dst)
   {
     // if src has more parameters than dst, then we can't do anything:
     // for any substitution there are numbers which will be sent to poly/0
-    if (rVar(src->extRing) > rVar(src->extRing))
+    if (rVar(src->extRing) > rVar(dst->extRing))
     {
       return NULL;
     }
