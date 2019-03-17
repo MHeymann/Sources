@@ -1115,7 +1115,7 @@ char* nfCoeffString(const coeffs cf)
   for(i = 0; i < n_NumberOfParameters(cf); i++)
   {
     // need to add "" to parameters
-    l += (strlen(p[i]+2) + 1);
+    l += (strlen(p[i]) + 2 + 1);
   }
   char *s = (char *)omAlloc(10+l+10+1);
   s[0] = '\0';
@@ -1140,16 +1140,10 @@ char* nfCoeffString(const coeffs cf)
 char* nfCoeffName(const coeffs cf)
 {
   const char* const* p=n_ParameterNames(cf);
-  int l = 0;
   int i;
-  for(i = 0; i < n_NumberOfParameters(cf); i++)
-  {
-    // add 2 for ""
-    l += (strlen(p[i]+2) + 1);
-  }
   static char s[200];
   s[0] = '\0';
-  snprintf(s, 20+10+1, "%s%d", "transFac(", cf->ch); /* Fp(a) or Q(a) */
+  snprintf(s, 10+10+1, "%s%d", "transFac(", cf->ch); /* Fp(a) or Q(a) */
   char tt[3];
   tt[0] = ',';
   tt[1] = '"';
