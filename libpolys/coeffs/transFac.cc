@@ -1032,6 +1032,7 @@ nMapFunc nfSetMap (const coeffs src, const coeffs dst)
 static const char* nfRead (const char *s, number *f, const coeffs cf)
 {
   poly p;
+  setCharacteristic (cf->ch); // important
   const char * result = p_Read(s, p, cf->extRing);
   if (p == NULL)
   {
@@ -1129,10 +1130,14 @@ static number nfConvFactoryNSingN(CanonicalForm n, const coeffs cf)
   return (number) p;
 }
 
-static CanonicalForm nfConvSingNFactoryN(number n, BOOLEAN /*setChar*/, const coeffs cf)
+static CanonicalForm nfConvSingNFactoryN(number n, BOOLEAN setChar, const coeffs cf)
 {
   n_Test(n, cf);
   pTransFac nn = (pTransFac) n;
+  if (setChar)
+  {
+    setCharacteristic (cf->ch);
+  }
 
   CanonicalForm nnum = nn->getNum();
   return nnum;
