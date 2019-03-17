@@ -5771,7 +5771,7 @@ int n_IsParam(const number m, const ring r)
   const coeffs C = r->cf;
   assume(C != NULL);
 
-  assume( nCoeff_is_Extension(C) );
+  assume( nCoeff_is_Extension(C) || C->rep == n_rep_transFac );
 
   const n_coeffType _filed_type = getCoeffType(C);
 

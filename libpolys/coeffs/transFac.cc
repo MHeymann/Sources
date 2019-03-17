@@ -967,8 +967,6 @@ number nfTransMap (number f, const coeffs src, const coeffs dst)
 
 nMapFunc nfSetMap (const coeffs src, const coeffs dst)
 {
-  assume (getCoeffType(dst) == n_transFac);
-
   // easiest case:
   if (src == dst)
   {
@@ -1342,7 +1340,6 @@ BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
   assume( extRing->qideal == NULL );
 
   assume( cf != NULL );
-  assume( getCoeffType(cf) == n_transFac );
 
   extRing->ref++;
 
