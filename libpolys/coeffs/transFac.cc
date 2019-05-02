@@ -1223,6 +1223,13 @@ static number nfParameter(const int iParameter, const coeffs cf)
   return (number) p;
 }
 
+static int nfParDeg (number f, const coeffs cf)
+{
+  n_Test (f, cf);
+  pTransFac ff = (pTransFac) f;
+  return totaldegree (ff->getNum());
+}
+
 static number nfGcd(number f, number g, const coeffs cf)
 {
   pTransFac ff = (pTransFac) f,
@@ -1356,6 +1363,7 @@ BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
   cf->iNumberOfParameters = rVar(extRing);
   cf->pParameterNames     = (const char**) extRing->names;
   cf->cfParameter         = nfParameter;
+  cf->cfParDeg            = nfParDeg;
   cf->has_simple_Inverse  = FALSE;
 
   cf->cfSubringGcd        = nfGcd;
@@ -1370,7 +1378,6 @@ BOOLEAN n_transFacInitChar(coeffs cf, void* parInfo)
 #endif
 
 
-  cf->cfParDeg = ntParDeg;
 
   if( nCoeff_is_Q(R->cf) )
     cf->cfClearContent = ntClearContent;
