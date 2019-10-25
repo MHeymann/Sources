@@ -454,33 +454,43 @@ static number nfAdd (number f, number g, const coeffs cf)
     return nfCopy(f, cf);
   }
 
-  const CanonicalForm& A = ff->getNum();
-  const CanonicalForm& B = gg->getNum();
-  if (ff->denominatorIsOne() && gg->denominatorIsOne())
-  {
-    pTransFac sum = new transFac (A + B, cf->extRing);
-    n_Test((number) sum, cf);
-    return (number) sum;
-  }
+  const CanonicalForm& df = ff->getDenom();
+  const CanonicalForm& dg = gg->getDenom();
+  const CanonicalForm& nf = ff->getNum();
+  const CanonicalForm& ng = gg->getNum();
 
-  const CanonicalForm& fden = ff->getDenom();
-  const CanonicalForm& gden = gg->getDenom();
-
-  CanonicalForm denGCD = gcd (fden, gden);
   CanonicalForm newNum, newDen;
 
-  if (denGCD.isOne())
+  if (df == dg)
   {
-    newNum = (A*gden) + (B*fden);
-    newDen = fden * gden;
+    newNum = nf + ng;
+    newDen = df;
+  }
+  else if (df.isOne())
+  {
+    newNum = nf * dg + ng;
+    newDen = dg;
+  }
+  else if (dg.isOne())
+  {
+    newNum = nf + ng*df;
+    newDen = df;
   }
   else
   {
-    CanonicalForm lcmf = fden / denGCD,
-                  lcmg = gden / denGCD;
-
-    newNum = A * lcmg + B * lcmf;
-    newDen = fden * lcmg; // == gden * lcmf
+    CanonicalForm gd = gcd (df, dg);
+    if (gd.isOne())
+    {
+      newNum = nf * dg + ng * df;
+      newDen = df * dg;
+    }
+    else
+    {
+      CanonicalForm qf = df / gd,
+                    qg = dg / gd;
+      newNum = qg * nf + qf * ng;
+      newDen = qg * df;
+    }
   }
 
   int newCompl = ff->getComp() + gg->getComp() + 1;
@@ -508,33 +518,43 @@ static number nfSub (number f, number g, const coeffs cf)
     return nfCopy (f, cf);
   }
 
-  const CanonicalForm& A = ff->getNum();
-  const CanonicalForm& B = gg->getNum();
-  if (ff->denominatorIsOne() && gg->denominatorIsOne())
-  {
-    pTransFac diff = new transFac(A - B, cf->extRing);
-    n_Test((number) diff, cf);
-    return (number) diff;
-  }
+  const CanonicalForm& df = ff->getDenom();
+  const CanonicalForm& dg = gg->getDenom();
+  const CanonicalForm& nf = ff->getNum();
+  const CanonicalForm& ng = gg->getNum();
 
-  const CanonicalForm& fden = ff->getDenom();
-  const CanonicalForm& gden = gg->getDenom();
-
-  CanonicalForm denGCD = gcd (fden, gden);
   CanonicalForm newNum, newDen;
 
-  if (denGCD.isOne())
+  if (df == dg)
   {
-    newNum = (A*gden) - (B*fden);
-    newDen = fden * gden;
+    newNum = nf - ng;
+    newDen = df;
+  }
+  else if (df.isOne())
+  {
+    newNum = nf * dg - ng;
+    newDen = dg;
+  }
+  else if (dg.isOne())
+  {
+    newNum = nf - ng*df;
+    newDen = df;
   }
   else
   {
-    CanonicalForm lcmf = fden / denGCD,
-                  lcmg = gden / denGCD;
-
-    newNum = (A*lcmg) - (B*lcmf);
-    newDen = fden * lcmg; // == gden * lcmf
+    CanonicalForm gd = gcd (df, dg);
+    if (gd.isOne())
+    {
+      newNum = nf * dg - ng * df;
+      newDen = df * dg;
+    }
+    else
+    {
+      CanonicalForm qf = df / gd,
+                    qg = dg / gd;
+      newNum = qg * nf - qf * ng;
+      newDen = qg * df;
+    }
   }
 
   int newCompl = ff->getComp() + gg->getComp() + 1;
