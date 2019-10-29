@@ -1295,23 +1295,12 @@ static BOOLEAN ii_transFac_init(leftv res, leftv args)
 {
   if (args == NULL || args->Typ() != INT_CMD)
   {
-    Werror("int expected. Usage: transFac(char, \"par1\", ..., \"parN\")");
+    Werror("int expected. Usage: transFac(char, par1, ..., parN)");
     return TRUE;
   }
 
   int chr = (int)(long) args->Data();
-  int nVar = 0;
-  leftv tmp = args->next;
-  while (tmp != NULL)
-  {
-    if (tmp->Typ() != STRING_CMD)
-    {
-      Werror("String expeceted. Usage: transFac(char, \"par1\", ..., \"parN\")");
-      return TRUE;
-    }
-    nVar++;
-    tmp = tmp->next;
-  }
+  int nVar = args->listLength() - 1;
 
   if (nVar == 0)
   {
@@ -1337,9 +1326,9 @@ static BOOLEAN ii_transFac_init(leftv res, leftv args)
   char** names = (char**) omAlloc0(nVar * sizeof(char_ptr));
   int i = 0;
 
-  for (tmp = args->next; tmp != NULL; tmp = tmp->next)
+  for (leftv tmp = args->next; tmp != NULL; tmp = tmp->next)
   {
-    names[i++] = (char*) tmp->CopyD(STRING_CMD);
+    names[i++] = omStrDup (tmp->Name());
   }
 
   ring extRing = rDefault(cf, nVar, names);
@@ -1349,8 +1338,7 @@ static BOOLEAN ii_transFac_init(leftv res, leftv args)
   {
     omFree(names[i]);
   }
-  omFree(names);
-
+  omFreeSize (names, nVar*sizeof (char*));
 
   // should never happen
   if (!extRing->cf->is_domain)
@@ -1388,7 +1376,7 @@ static coeffs nfInitCfByName(char *s, n_coeffType n)
       Werror("transFac: invalid coeff name.");
       return NULL;
     }
-    s += 2; // skip ,"
+    s += 1; // skip comma
     int pLen;
     // variable names
     char** names = (char**) omAlloc0(nPars * sizeof(char_ptr));
@@ -1396,12 +1384,16 @@ static coeffs nfInitCfByName(char *s, n_coeffType n)
     {
       tmp = s;
       pLen = 0;
-      while (*(tmp++) != '"') pLen++;
+      while (*tmp != ',' && *tmp != ')')
+      {
+        pLen++;
+        tmp++;
+      }
       names[i] = (char*) omAlloc0((pLen+1) * sizeof(char));
       sprintf(names[i], "%.*s", pLen, s);
 
-      // skip name and the three characters ","
-      s += pLen + 3;
+      // skip name and the comma
+      s += pLen + 1;
     }
 
     // now construct ring
@@ -1423,7 +1415,7 @@ static coeffs nfInitCfByName(char *s, n_coeffType n)
     {
       omFree(names[i]);
     }
-    omFree(names);
+    omFreeSize (names, nPars*sizeof (char*));
 
     return nInitChar(n_transFac, (void*) extRing);
   }

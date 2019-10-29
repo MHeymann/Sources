@@ -1134,24 +1134,18 @@ char* nfCoeffString(const coeffs cf)
   int i;
   for(i = 0; i < n_NumberOfParameters(cf); i++)
   {
-    // need to add "" to parameters
-    l += (strlen(p[i]) + 2 + 1);
+    l += (strlen(p[i]) + 1);
   }
   char *s = (char *)omAlloc(10+l+10+1);
   s[0] = '\0';
   snprintf(s, 10+10+1, "%s%d", "transFac(", cf->ch); /* Fp(a) or Q(a) */
-  char tt[3];
+  char tt[2];
   tt[0] = ',';
-  tt[1] = '"';
-  tt[2] = '\0';
-  char ttt[2];
-  ttt[0] = '"';
-  ttt[1] = '\0';
+  tt[1] = '\0';
   for(i = 0; i < n_NumberOfParameters(cf); i++)
   {
     strcat(s, tt);
     strcat(s, p[i]);
-    strcat(s, ttt);
   }
   strcat(s, ")");
   return s;
@@ -1164,18 +1158,13 @@ char* nfCoeffName(const coeffs cf)
   static char s[200];
   s[0] = '\0';
   snprintf(s, 10+10+1, "%s%d", "transFac(", cf->ch); /* Fp(a) or Q(a) */
-  char tt[3];
+  char tt[2];
   tt[0] = ',';
-  tt[1] = '"';
-  tt[2] = '\0';
-  char ttt[2];
-  ttt[0] = '"';
-  ttt[1] = '\0';
+  tt[1] = '\0';
   for(i = 0; i < n_NumberOfParameters(cf); i++)
   {
     strcat(s, tt);
     strcat(s, p[i]);
-    strcat(s, ttt);
   }
   strcat(s, ")");
   return s;
