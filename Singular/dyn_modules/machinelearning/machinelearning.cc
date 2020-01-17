@@ -7,6 +7,65 @@
 
 #include "mlpredict.h"
 
+static BOOLEAN openHelpFile(leftv result, leftv arg)
+{
+	char buffer[100];
+	if (arg->rtyp != STRING_CMD) {
+		// We really need the argument passed to be a string
+		return TRUE;
+	}
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+	//define something for Windows (32-bit and 64-bit, this part is common)
+	#ifdef _WIN64
+		//define something for Windows (64-bit only)
+		sprintf(buffer,
+			"cmd /c start ~/.singular/helpfiles/singular/html/%s",
+			(char *)arg->data);
+	#else
+		//define something for Windows (32-bit only)
+		sprintf(buffer,
+			"cmd /c start ~/.singular/helpfiles/singular/html/%s",
+			(char *)arg->data);
+	#endif
+#elif __APPLE__
+	#include <TargetConditionals.h>
+	#if TARGET_OS_MAC
+		// Other kinds of Mac OS
+		sprintf(buffer, "open ~/.singular/helpfiles/singular/html/%s",
+				(char *)arg->data);
+	#else
+		Print("Unsupported Apple device:  openHelpFile is not \
+				implemented for this device");
+		return TRUE;
+	#endif
+#elif __linux__
+	// linux
+	sprintf(buffer, "xdg-open ~/.singular/helpfiles/singular/html/%s",
+			(char *)arg->data);
+#elif __unix__ // all unices not caught above
+	// Unix
+	Print("Unsupported Unix device:  openHelpFile is not \
+			implemented for this device");
+		return TRUE;
+#elif defined(_POSIX_VERSION)
+    // POSIX
+#else
+	Print("Unsupported Posix device:  openHelpFile is not \
+			implemented for this device");
+		return TRUE;
+#endif
+	Print("%s", buffer);
+	PrintLn();
+
+	if (system(buffer)) {
+		Print("The System complained when running the open command");
+		PrintLn();
+	}
+	result->rtyp=NONE; // set the result type
+	return FALSE;
+}
+
 static BOOLEAN predictHelp(leftv result, leftv arg)
 {
 	char *buffer[5];
@@ -63,5 +122,11 @@ extern "C" int SI_MOD_INIT(machinelearning)(SModulFunctions* psModulFunctions)
 			"predictHelp",// for the singular interpreter
 			FALSE, // should enter the global name space
 			predictHelp); // the C/C++ routine
+	psModulFunctions->iiAddCproc(
+			(currPack->libname? currPack->libname: ""),
+			"openHelpFile",// for the singular interpreter
+			FALSE, // should enter the global name space
+			openHelpFile); // the C/C++ routine
+
 	return MAX_TOK;
 }
