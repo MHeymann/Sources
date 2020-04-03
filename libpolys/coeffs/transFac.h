@@ -13,24 +13,22 @@ class transFac
     ring          f_r;         // polynomial ring where coefficient polynomials live
     CanonicalForm numerator;   // numerator of fraction
     CanonicalForm denominator; // factorized denominator of fraction
-    int           complexity;
 
   public:
     transFac (const ring r);
     transFac (long n, const ring r);
 
     transFac (CanonicalForm n, const ring r);
-    transFac (CanonicalForm n, CanonicalForm, int c, const ring r);
+    transFac (CanonicalForm n, CanonicalForm, const ring r);
 
     transFac (poly n, const ring r);
-    transFac (poly n, poly d, int c, const ring r);
+    transFac (poly n, poly d, const ring r);
 
     transFac (const transFac *l);
 
     ring getRing() const;
     CanonicalForm const& getNum()   const;
     CanonicalForm const& getDenom() const;
-    int getComp() const;
 
     poly getNumPoly() const;
     poly getDenomPoly() const;
@@ -41,7 +39,7 @@ class transFac
 
     void negateInplace();
 
-    void normalize (bool);
+    void normalize();
 };
 
 typedef transFac* pTransFac;
