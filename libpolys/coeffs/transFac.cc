@@ -134,16 +134,23 @@ void transFac::normalize ()
   {
     CanonicalForm denN = bCommonDen (numerator);
     CanonicalForm denD = bCommonDen (denominator);
-    numerator   *= denN;
-    denominator *= denD;
+    if (!denN.isOne())
+      numerator   *= denN;
+    if (!denD.isOne())
+      denominator *= denD;
 
     Off (SW_RATIONAL);
     CanonicalForm gcdDen = gcd (denN, denD);
-    denN /= gcdDen;
-    denD /= gcdDen;
+    if (!gcdDen.isOne())
+    {
+      denN /= gcdDen;
+      denD /= gcdDen;
+    }
     On (SW_RATIONAL);
-    denominator *= denN;
-    numerator   *= denD;
+    if (!denN.isOne())
+      denominator *= denN;
+    if (!denD.isOne())
+      numerator   *= denD;
 
     Off (SW_RATIONAL);
     CanonicalForm gcon = gcd (icontent (numerator), icontent (denominator));
@@ -471,7 +478,7 @@ static number nfAdd (number f, number g, const coeffs cf)
   }
 
   pTransFac sum = new transFac (newNum, newDen, cf->extRing);
-  //sum->normalize();
+  sum->normalize();
   n_Test ((number) sum, cf);
   return (number) sum;
 }
@@ -534,7 +541,7 @@ static number nfSub (number f, number g, const coeffs cf)
   }
 
   pTransFac diff = new transFac (newNum, newDen, cf->extRing);
-  //diff->normalize();
+  diff->normalize();
   n_Test ((number) diff, cf);
   return (number) diff;
 }
@@ -1341,13 +1348,12 @@ static number nfNormalizeHelper(number f, number g, const coeffs cf)
   pTransFac ff = (pTransFac) f,
             gg = (pTransFac) g;
   if (gg->denominatorIsOne()) return nfCopy(f,cf);
-  CanonicalForm p   = ff->getNum();
-  const CanonicalForm& d = gg->getDenom();
+  CanonicalForm p = ff->getNum();
+  CanonicalForm const& d = gg->getDenom();
   CanonicalForm GCD = gcd (p, d);
-  p *= d;
 
-  pTransFac res=new transFac(p/GCD,cf->extRing);
-  return (number)res;
+  pTransFac res=new transFac ((p/GCD)*d, cf->extRing);
+  return (number) res;
 }
 
 static BOOLEAN nfCoeffIsEqual(const coeffs cf, n_coeffType n, void *param)
