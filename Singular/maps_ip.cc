@@ -340,7 +340,7 @@ poly pSubstPar(poly p, int par, poly image)
       memset(v,0,sizeof(sleftv));
 
       number d = n_GetDenom(pGetCoeff(p), currRing->cf);
-      poly den = ((pTransFac) d)->getNumPoly();
+      poly den = ((pTransFac) d)->getNumPoly (currRing->cf->extRing);
       p_Test(den, R);
 
       if ( n_IsOne (d, currRing->cf) )
@@ -355,7 +355,7 @@ poly pSubstPar(poly p, int par, poly image)
       p_Delete (&den, R);
 
       number num = n_GetNumerator(pGetCoeff(p), currRing->cf);
-      poly pnum = ((pTransFac) num)->getNumPoly();
+      poly pnum = ((pTransFac) num)->getNumPoly (currRing->cf->extRing);
       memset(&tmpW,0,sizeof(sleftv));
       tmpW.rtyp = POLY_CMD;
       p_Test(pnum, R);

@@ -16,57 +16,45 @@
 #include "polys/prCopy.h"
 
 // member functions
-transFac::transFac (const ring r) :
-  f_r (r),
+transFac::transFac() :
   numerator (CanonicalForm (0)),
   denominator (CanonicalForm (1))
 {}
 
-transFac::transFac (long n, const ring r) :
-  f_r (r),
+transFac::transFac (long n) :
   numerator (CanonicalForm (n)),
   denominator (CanonicalForm (1))
 {}
 
-transFac::transFac (CanonicalForm n, const ring r) :
-  f_r (r),
+transFac::transFac (CanonicalForm n) :
   numerator (n),
   denominator (CanonicalForm (1))
 {}
 
-transFac::transFac (CanonicalForm n, CanonicalForm d, const ring r) :
-  f_r (r),
+transFac::transFac (CanonicalForm n, CanonicalForm d) :
   numerator (n),
   denominator (d)
 {}
 
 transFac::transFac (poly n, const ring r) :
-  f_r (r),
+  numerator (convSingPFactoryP (n, r)),
   denominator (CanonicalForm (1))
 {
-  numerator = convSingPFactoryP (n, f_r);
-  p_Delete (&n, f_r);
+  p_Delete (&n, r);
 }
 
 transFac::transFac (poly n, poly d, const ring r) :
-  f_r (r)
+  numerator (convSingPFactoryP (n, r)),
+  denominator (convSingPFactoryP (d, r))
 {
-  numerator = convSingPFactoryP (n, f_r);
-  p_Delete (&n, f_r);
-  denominator = convSingPFactoryP (d, f_r);
-  p_Delete (&d, f_r);
+  p_Delete (&n, r);
+  p_Delete (&d, r);
 }
 
 transFac::transFac (const transFac *l) :
-  f_r (l->getRing()),
-  numerator (l->getNum()),
-  denominator (l->getDenom())
+  numerator (l->numerator),
+  denominator (l->denominator)
 {}
-
-ring transFac::getRing() const
-{
-  return f_r;
-}
 
 CanonicalForm const& transFac::getNum() const
 {
@@ -78,14 +66,14 @@ CanonicalForm const& transFac::getDenom() const
   return denominator;
 }
 
-poly transFac::getNumPoly() const
+poly transFac::getNumPoly (const ring r) const
 {
-  return convFactoryPSingP (numerator, f_r);
+  return convFactoryPSingP (numerator, r);
 }
 
-poly transFac::getDenomPoly() const
+poly transFac::getDenomPoly (const ring r) const
 {
-  return convFactoryPSingP (denominator, f_r);
+  return convFactoryPSingP (denominator, r);
 }
 
 bool transFac::numeratorIsZero() const
@@ -334,7 +322,7 @@ static BOOLEAN nfEqual (number f, number g, const coeffs cf)
 
 number nfInit (long i, const coeffs cf)
 {
-  pTransFac f = new transFac (i, cf->extRing);
+  pTransFac f = new transFac (i);
   n_Test ((number) f, cf);
   return (number) f;
 }
@@ -349,7 +337,7 @@ number nfInit (poly p, const coeffs cf)
     n_Test ((number) f, cf);
     return (number) f;
   }
-  return (number) new transFac (cf->extRing);
+  return (number) new transFac ();
 }
 
 static number nfGetNumerator (number &f, const coeffs cf)
@@ -362,7 +350,7 @@ static number nfGetNumerator (number &f, const coeffs cf)
   }
 
   ff->normalize ();
-  pTransFac num = new transFac(ff->getNum(), cf->extRing);
+  pTransFac num = new transFac (ff->getNum());
   n_Test((number) num, cf);
   return (number) num;
 }
@@ -377,7 +365,7 @@ static number nfGetDenom (number &f, const coeffs cf)
   }
 
   ff->normalize ();
-  pTransFac num = new transFac(ff->getDenom(), cf->extRing);
+  pTransFac num = new transFac (ff->getDenom());
   n_Test((number) num, cf);
   return (number) num;
 }
@@ -477,7 +465,7 @@ static number nfAdd (number f, number g, const coeffs cf)
     }
   }
 
-  pTransFac sum = new transFac (newNum, newDen, cf->extRing);
+  pTransFac sum = new transFac (newNum, newDen);
   sum->normalize();
   n_Test ((number) sum, cf);
   return (number) sum;
@@ -540,7 +528,7 @@ static number nfSub (number f, number g, const coeffs cf)
     }
   }
 
-  pTransFac diff = new transFac (newNum, newDen, cf->extRing);
+  pTransFac diff = new transFac (newNum, newDen);
   diff->normalize();
   n_Test ((number) diff, cf);
   return (number) diff;
@@ -620,7 +608,7 @@ static number nfMult (number f, number g, const coeffs cf)
     }
   }
 
-  pTransFac prod = new transFac (N, D, cf->extRing);
+  pTransFac prod = new transFac (N, D);
   prod->normalize();
   n_Test ((number) prod, cf);
   return (number) prod;
@@ -707,7 +695,7 @@ static number nfDiv (number f, number g, const coeffs cf)
     }
   }
 
-  pTransFac div = new transFac (N, D, cf->extRing);
+  pTransFac div = new transFac (N, D);
   div->normalize();
   n_Test ((number) div, cf);
   return (number) div;
@@ -722,7 +710,7 @@ static number nfInvers (number f, const coeffs cf)
     WerrorS (nDivBy0);
   }
 
-  pTransFac inv = new transFac (ff->getDenom(), ff->getNum(), cf->extRing);
+  pTransFac inv = new transFac (ff->getDenom(), ff->getNum());
   inv->normalize();
   n_Test ((number) inv, cf);
   return (number) inv;
@@ -767,7 +755,7 @@ static void nfPower (number f, int exp, number *p, const coeffs cf)
   CanonicalForm dpow = power (FF->getDenom(), exp);
 
   nfDelete(&F, cf);
-  pTransFac pow = new transFac (npow, dpow, cf->extRing);
+  pTransFac pow = new transFac (npow, dpow);
   *p = (number) pow;
   n_Test(*p, cf);
 }
@@ -784,7 +772,7 @@ number nfFarey (number f, number n, const coeffs cf)
 
   CanonicalForm denom = Farey (ff->getDenom(), N);
 
-  return (number) new transFac(num, denom, cf->extRing);
+  return (number) new transFac(num, denom);
 }
 
 static int nfSize (number f, const coeffs cf)
@@ -799,7 +787,7 @@ static int nfSize (number f, const coeffs cf)
 
   unsigned long size_n = 0UL, size_d = 0UL;
 
-  poly num = ff->getNumPoly();
+  poly num = ff->getNumPoly (cf->extRing);
   for (poly it = num; it != NULL; pIter (it))
   {
     number co = p_GetCoeff (it, cf->extRing);
@@ -807,7 +795,7 @@ static int nfSize (number f, const coeffs cf)
   }
   p_Delete (&num, cf->extRing);
 
-  poly den = ff->getDenomPoly();
+  poly den = ff->getDenomPoly (cf->extRing);
   for (poly it = den; it != NULL; pIter (it))
   {
     number co = p_GetCoeff (it, cf->extRing);
@@ -843,7 +831,7 @@ static number nfMap00 (number a, const coeffs src, const coeffs dst)
   Off (SW_RATIONAL);
 
   // normalization will take care of nested fractions later on
-  number res = (number) new transFac (N, dst->extRing);
+  number res = (number) new transFac (N);
 
   n_Test(res, dst);
   return res;
@@ -858,7 +846,7 @@ static number nfMapPP(number a, const coeffs src, const coeffs dst)
   }
   assume(src == dst->extRing->cf);
 
-  number res = (number) new transFac (n_convSingNFactoryN (a, TRUE, src), dst->extRing);
+  number res = (number) new transFac (n_convSingNFactoryN (a, TRUE, src));
   n_Test(res, dst);
   return res;
 }
@@ -875,7 +863,7 @@ static number nfCopyMap (number f, const coeffs cf, const coeffs dst)
 
   if (ff->numeratorIsZero())
   {
-    pTransFac cp = new transFac (rDst);
+    pTransFac cp = new transFac();
     n_Test ((number) cp, dst);
     return (number) cp;
   }
@@ -885,16 +873,16 @@ static number nfCopyMap (number f, const coeffs cf, const coeffs dst)
     return nfCopy (f, dst);
   }
 
-  poly num  = ff->getNumPoly();
+  poly num  = ff->getNumPoly (cf->extRing);
   poly nNew = prCopyR (num, rSrc, rDst);
   p_Delete (&num, rSrc);
 
   if (ff->denominatorIsOne())
   {
-    return nfInit(nNew, dst);
+    return nfInit (nNew, dst);
   }
 
-  poly d = ff->getDenomPoly();
+  poly d = ff->getDenomPoly (cf->extRing);
   poly dNew = prCopyR (d, rSrc, rDst);
   p_Delete (&d, rSrc);
 
@@ -917,7 +905,6 @@ number nfSubMap (number f, const coeffs src, const coeffs dst)
   pTransFac result = new transFac
     ( ff->getNum().mapinto()
     , ff->getDenom().mapinto()
-    , rDst
     ); // does this work?
 
   setCharacteristic (save);
@@ -1104,7 +1091,7 @@ static const char* nfRead (const char *s, number *f, const coeffs cf)
   const char * result = p_Read(s, p, cf->extRing);
   if (p == NULL)
   {
-    *f = (number) new transFac(cf->extRing);
+    *f = (number) new transFac();
   }
   else
   {
@@ -1126,7 +1113,7 @@ static void nfWriteLong (number f, const coeffs cf)
   }
   else
   {
-    poly fn = ff->getNumPoly();
+    poly fn = ff->getNumPoly (cf->extRing);
     BOOLEAN omitParenth = p_IsConstant (fn, cf->extRing);
 
     if (!omitParenth) { StringAppendS("("); }
@@ -1137,7 +1124,7 @@ static void nfWriteLong (number f, const coeffs cf)
     if (!ff->denominatorIsOne())
     {
       StringAppendS("/");
-      poly fd = ff->getDenomPoly();
+      poly fd = ff->getDenomPoly (cf->extRing);
       omitParenth = p_IsConstant (fd, cf->extRing);
 
       if (!omitParenth) { StringAppendS("("); }
@@ -1162,7 +1149,7 @@ static void nfWriteShort(number f, const coeffs cf)
   }
   else
   {
-    poly fn = ff->getNumPoly();
+    poly fn = ff->getNumPoly (cf->extRing);
     BOOLEAN omitParenth = p_IsConstant (fn, cf->extRing);
 
     if (!omitParenth) { StringAppendS("("); }
@@ -1173,7 +1160,7 @@ static void nfWriteShort(number f, const coeffs cf)
     if (!ff->denominatorIsOne())
     {
       StringAppendS("/");
-      poly fd = ff->getDenomPoly();
+      poly fd = ff->getDenomPoly (cf->extRing);
       omitParenth = p_IsConstant (fd, cf->extRing);
 
       if (!omitParenth) { StringAppendS("("); }
@@ -1193,7 +1180,7 @@ static number nfConvFactoryNSingN(CanonicalForm n, const coeffs cf)
   {
     return nfInit(0l, cf);
   }
-  pTransFac p = new transFac(n, cf->extRing);
+  pTransFac p = new transFac(n);
   n_Test((number) p, cf);
   return (number) p;
 }
@@ -1294,11 +1281,11 @@ static void nfWriteFd(number f, const ssiInfo* d, const coeffs cf)
   // force normalization
   ff->normalize ();
 
-  poly num = ff->getNumPoly();
+  poly num = ff->getNumPoly (cf->extRing);
   ssiWritePoly_R (d, POLY_CMD, num, cf->extRing);
   p_Delete (&num, cf->extRing);
 
-  poly den = ff->getDenomPoly();
+  poly den = ff->getDenomPoly (cf->extRing);
 
   ssiWritePoly_R (d, POLY_CMD, den, cf->extRing);
   p_Delete (&den, cf->extRing);
@@ -1320,7 +1307,7 @@ static number nfParameter(const int iParameter, const coeffs cf)
   assume( R != NULL );
   assume( 0 < iParameter && iParameter <= rVar(R) );
 
-  pTransFac p = new transFac(CanonicalForm(Variable(iParameter)), cf->extRing);
+  pTransFac p = new transFac (CanonicalForm (Variable (iParameter)));
 
   n_Test((number) p, cf);
   return (number) p;
@@ -1338,7 +1325,7 @@ static number nfGcd(number f, number g, const coeffs cf)
   pTransFac ff = (pTransFac) f,
             gg = (pTransFac) g;
 
-  pTransFac p = new transFac(gcd(ff->getNum(),gg->getNum()),cf->extRing);
+  pTransFac p = new transFac (gcd (ff->getNum(), gg->getNum()));
   return (number)p;
 }
 
@@ -1352,7 +1339,7 @@ static number nfNormalizeHelper(number f, number g, const coeffs cf)
   CanonicalForm const& d = gg->getDenom();
   CanonicalForm GCD = gcd (p, d);
 
-  pTransFac res=new transFac ((p/GCD)*d, cf->extRing);
+  pTransFac res=new transFac ((p/GCD)*d);
   return (number) res;
 }
 
@@ -1384,7 +1371,7 @@ int nftIsParam (number f, const coeffs cf)
   {
     return 0;
   }
-  poly fn = ff->getNumPoly();
+  poly fn = ff->getNumPoly (cf->extRing);
   int v = p_Var (fn, cf->extRing);
   p_Delete (&fn, cf->extRing);
   return v;
