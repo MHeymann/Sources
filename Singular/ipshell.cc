@@ -1735,7 +1735,7 @@ void rDecomposeCF(leftv h,const ring r,const ring R)
   // ----------------------------------------
   // 3: qideal
   L->m[3].rtyp=IDEAL_CMD;
-  if (nCoeff_is_transExt(R->cf))
+  if (!nCoeff_is_algExt(R->cf))
     L->m[3].data=(void *)idInit(1,1);
   else
   {
