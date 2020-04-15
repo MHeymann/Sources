@@ -1290,7 +1290,8 @@ extern "C" int flint_mod_init(SModulFunctions* psModulFunctions)
 }
 #endif
 
-static n_coeffType n_transFac = n_unknown;
+extern n_coeffType n_transFac;
+n_coeffType n_transFac = n_unknown;
 static BOOLEAN ii_transFac_init(leftv res, leftv args)
 {
   if (args == NULL || args->Typ() != INT_CMD)
