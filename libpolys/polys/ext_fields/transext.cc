@@ -40,6 +40,7 @@
 
 #include "coeffs/coeffs.h"
 #include "coeffs/numbers.h"
+#include "coeffs/transFac.h"
 
 #include "coeffs/longrat.h"
 
@@ -1997,6 +1998,45 @@ static number ntGenMap(number a, const coeffs cf, const coeffs dst)
   return (number)result;
 }
 
+static number ntCopyFac (number a, const coeffs cf, const coeffs dst)
+{
+  ntTest(a);
+  pTransFac f = (pTransFac) a;
+  if (f->numeratorIsZero()) return NULL;
+
+  const ring rSrc = cf->extRing;
+  const ring rDst = dst->extRing;
+
+  fraction result = (fraction)omAllocBin(fractionObjectBin);
+
+  if( rSrc == rDst )
+  {
+    NUM (result) = f->getNumPoly (rDst);
+    DEN (result) = f->getDenomPoly (rDst);
+  }
+  else
+  {
+    poly g = prCopyR (f->getNumPoly (rSrc), rSrc, rDst);
+    poly h = NULL;
+
+    if (!f->denominatorIsOne())
+      h = prCopyR (f->getDenomPoly (rSrc), rSrc, rDst);
+
+    NUM (result) = g;
+    DEN (result) = h;
+  }
+
+  COM(result) = 0;
+  //check_N((number)result,dst);
+  n_Test((number)result, dst);
+  return (number)result;
+}
+
+static number ntGenFac (number a, const coeffs cf, const coeffs dst)
+{
+  return NULL; // am lazy
+}
+
 static number ntCopyAlg(number a, const coeffs cf, const coeffs dst)
 {
   n_Test(a, cf) ;
@@ -2106,6 +2146,7 @@ nMapFunc ntSetMap(const coeffs src, const coeffs dst)
       if (mpz_cmp(src->modNumber,bDst->modNumber)==0) return ntMapPP;         /// Z/p     --> Z/p(T)
     }
   }
+
   if (h != 1) return NULL;
   //if ((!nCoeff_is_Zp(bDst)) && (!nCoeff_is_Q(bDst))) return NULL;
 
@@ -2121,12 +2162,20 @@ nMapFunc ntSetMap(const coeffs src, const coeffs dst)
     if (strcmp(rRingVar(i, src->extRing), rRingVar(i, dst->extRing)) != 0)
        return NULL;
 
+  extern n_coeffType n_transFac;
   if (src->type==n_transExt)
   {
      if (src->extRing->cf==dst->extRing->cf)
        return ntCopyMap;          /// K(T')   --> K(T)
      else
        return ntGenMap;          /// K(T')   --> K'(T)
+  }
+  else if (src->type==n_transFac)
+  {
+     if (src->extRing->cf==dst->extRing->cf)
+       return ntCopyFac;          /// K(T')   --> K(T)
+     else
+       return ntGenFac;          /// K(T')   --> K'(T)
   }
   else
   {

@@ -871,7 +871,8 @@ static FORCE_INLINE BOOLEAN nCoeff_is_GF(const coeffs r, int q)
 static FORCE_INLINE BOOLEAN nCoeff_is_Extension(const coeffs r)
 {
   assume(r != NULL);
-  return (getCoeffType(r)==n_algExt) || (getCoeffType(r)==n_transExt);
+  extern n_coeffType n_transFac;
+  return (getCoeffType(r)==n_algExt) || (getCoeffType(r)==n_transExt) || (getCoeffType(r)==n_transFac);
 }
 
 /* DO NOT USE (only kept for compatibility reasons towards the SINGULAR
