@@ -5765,14 +5765,13 @@ poly rGetVar(const int varIndex, const ring r)
 
 
 /// TODO: rewrite somehow...
-extern n_coeffType n_transFac;
 int n_IsParam(const number m, const ring r)
 {
   assume(r != NULL);
   const coeffs C = r->cf;
   assume(C != NULL);
 
-  assume( nCoeff_is_Extension(C) || getCoeffType(C)==n_transFac );
+  assume( nCoeff_is_Extension(C) );
 
   const n_coeffType _filed_type = getCoeffType(C);
 
@@ -5782,7 +5781,7 @@ int n_IsParam(const number m, const ring r)
   if( _filed_type == n_transExt )
     return ntIsParam(m, C);
 
-  if (_filed_type == n_transFac)
+  if (nCoeff_is_transFac (C))
     return nftIsParam (m, C);
 
   Werror("n_IsParam: IsParam is not to be used for (coeff_type = %d)", _filed_type);

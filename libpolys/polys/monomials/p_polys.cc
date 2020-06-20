@@ -18,6 +18,7 @@
 
 #include "coeffs/longrat.h" // snumber is needed...
 #include "coeffs/numbers.h" // ndCopyMap
+#include "coeffs/transFac.h"
 
 #include "polys/PolyEnumerator.h"
 
@@ -4010,6 +4011,19 @@ poly n_PermNumber(const number z, const int *par_perm, const int , const ring sr
         WarnS("Not defined: Cannot map a rational fraction and make a polynomial out of it! Ignoring the denominator.");
     }
   }
+  else if (nCoeff_is_transFac (srcCf))
+  {
+    pTransFac zf = (pTransFac) z;
+    zz = zf->getNumPoly (srcExtRing);
+    if ( zz == NULL ) return NULL;
+    if (!zf->denominatorIsOne())
+    {
+      poly zd = zf->getDenomPoly (srcExtRing);
+      if (!p_IsConstant (zd,srcExtRing))
+        WarnS("Not defined: Cannot map a rational fraction and make a polynomial out of it! Ignoring the denominator.");
+      p_Delete (&zd, srcExtRing);
+    }
+  }
   else
   {
     assume (FALSE);
@@ -4045,6 +4059,22 @@ poly n_PermNumber(const number z, const int *par_perm, const int , const ring sr
     qq=p_Div_nn(qq,n,dst);
     n_Delete(&n,dstCf);
     p_Normalize(qq,dst);
+  }
+  if (nCoeff_is_transFac (srcCf))
+  {
+    pTransFac zf = (pTransFac) z;
+    if (!zf->denominatorIsOne())
+    {
+      poly zd = zf->getDenomPoly (srcExtRing);
+      if (p_IsConstant (zd, srcExtRing))
+      {
+        number n=nMap (pGetCoeff (zd),srcExtRing->cf, dstCf);
+        qq=p_Div_nn (qq,n,dst);
+        n_Delete (&n, dstCf);
+        p_Normalize (qq, dst);
+      }
+      p_Delete (&zd, srcExtRing);
+    }
   }
   p_Test (qq, dst);
 
@@ -4159,13 +4189,27 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
               poly pcn; // = (number)c
               assume( !n_IsZero(c, C) );
               if( nCoeff_is_algExt(C) )
-                 pcn = (poly) c;
-               else //            nCoeff_is_transExt(C)
-                 pcn = NUM((fraction)c);
+                pcn = (poly) c;
+              else if (nCoeff_is_transFac (C))
+                pcn = ((pTransFac) c)->getNumPoly (R);
+              else //            nCoeff_is_transExt(C)
+                pcn = NUM((fraction)c);
               if (pNext(pcn) == NULL) // c->z
+              {
                 p_AddExp(pcn, -perm[i], e, R);
+                // pcn is new poly, have to update c manually
+                if (nCoeff_is_transFac (C))
+                {
+                  p_GetCoeff (qq, dst) = (number) new transFac (pcn, ((pTransFac) c)->getDenomPoly (R), R);
+                  n_Delete (&c, C);
+                }
+              }
               else /* more difficult: we have really to multiply: */
               {
+                if (nCoeff_is_transFac (C))
+                {
+                  p_Delete (&pcn, R);
+                }
                 poly mmc = p_ISet(1, R);
                 p_SetExp(mmc, -perm[i], e, R);
                 p_Setm(mmc, R);
@@ -4173,6 +4217,8 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
                 // convert back to a number: number nnc = mmc;
                 if( nCoeff_is_algExt(C) )
                    nnc = (number) mmc;
+                else if (nCoeff_is_transFac (C))
+                  nnc = nfInit (mmc, C);
                 else //            nCoeff_is_transExt(C)
                   nnc = ntInit(mmc, C);
                 p_GetCoeff(qq, dst) = n_Mult((number)c, nnc, C);

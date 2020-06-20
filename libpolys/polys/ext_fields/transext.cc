@@ -2162,7 +2162,6 @@ nMapFunc ntSetMap(const coeffs src, const coeffs dst)
     if (strcmp(rRingVar(i, src->extRing), rRingVar(i, dst->extRing)) != 0)
        return NULL;
 
-  extern n_coeffType n_transFac;
   if (src->type==n_transExt)
   {
      if (src->extRing->cf==dst->extRing->cf)
@@ -2170,7 +2169,7 @@ nMapFunc ntSetMap(const coeffs src, const coeffs dst)
      else
        return ntGenMap;          /// K(T')   --> K'(T)
   }
-  else if (src->type==n_transFac)
+  else if (nCoeff_is_transFac (src))
   {
      if (src->extRing->cf==dst->extRing->cf)
        return ntCopyFac;          /// K(T')   --> K(T)

@@ -944,6 +944,9 @@ static FORCE_INLINE BOOLEAN nCoeff_is_Q_algext(const coeffs r)
 static FORCE_INLINE BOOLEAN nCoeff_is_transExt(const coeffs r)
 { assume(r != NULL); return (getCoeffType(r)==n_transExt); }
 
+static FORCE_INLINE BOOLEAN nCoeff_is_transFac(const coeffs r)
+{ assume(r != NULL); extern n_coeffType n_transFac; return (getCoeffType(r)==n_transFac); }
+
 /// Computes the content and (inplace) divides it out on a collection
 /// of numbers
 /// number @em c is the content (i.e. the GCD of all the coeffs, which
